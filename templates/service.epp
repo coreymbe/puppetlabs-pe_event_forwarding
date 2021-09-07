@@ -1,0 +1,10 @@
+[Unit]
+Description=Oneshot service to capture event data
+Wants=common_events.timer
+
+[Service]
+Type=oneshot
+ExecStart=<%= $common_events::confdir %>/collect_api_events.rb <%= $common_events::confdir %> <%= $common_events::logfile_basepath %>/common_events/common_events.log <%= $common_events::lockdir_basepath %>/common_events/cache/state
+
+[Install]
+WantedBy=multi-user.target

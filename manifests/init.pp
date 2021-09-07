@@ -6,21 +6,16 @@
 # @example
 #   include common_events
 class common_events (
-  Optional[String]                                $pe_username      = undef,
-  Optional[Sensitive[String]]                     $pe_password      = undef,
-  Optional[String]                                $pe_token         = undef,
-  Optional[String]                                $pe_console       = 'localhost',
-  Optional[Boolean]                               $disabled         = false,
-  Optional[String]                                $cron_minute      = '*/2',
-  Optional[String]                                $cron_hour        = '*',
-  Optional[String]                                $cron_weekday     = '*',
-  Optional[String]                                $cron_month       = '*',
-  Optional[String]                                $cron_monthday    = '*',
-  Optional[String]                                $log_path         = undef,
-  Optional[String]                                $lock_path        = undef,
-  Optional[String]                                $confdir          = "${settings::confdir}/common_events",
-  Enum['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'] $log_level        = 'WARN',
-  Enum['NONE', 'DAILY', 'WEEKLY', 'MONTHLY']      $log_rotation     = 'NONE',
+  Optional[String]                                $pe_username  = undef,
+  Optional[Sensitive[String]]                     $pe_password  = undef,
+  Optional[String]                                $pe_token     = undef,
+  Optional[String]                                $pe_console   = 'localhost',
+  Optional[String]                                $timer        = '*-*-* *:0/2',
+  Optional[String]                                $log_path     = undef,
+  Optional[String]                                $lock_path    = undef,
+  Optional[String]                                $confdir      = "${settings::confdir}/common_events",
+  Enum['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'] $log_level    = 'WARN',
+  Enum['NONE', 'DAILY', 'WEEKLY', 'MONTHLY']      $log_rotation = 'NONE',
 ){
 
   if (
@@ -46,30 +41,9 @@ class common_events (
     $group              = 'root'
   }
 
-  unless $disabled {
-    $cron_ensure = present
-  } else {
-    $cron_ensure = absent
-  }
-
   $logfile_basepath = common_events::base_path($settings::logdir, $log_path)
   $lockdir_basepath = common_events::base_path($settings::statedir, $lock_path)
   $conf_dirs        = [$confdir, "${logfile_basepath}/common_events", "${lockdir_basepath}/common_events", "${lockdir_basepath}/common_events/cache/", "${lockdir_basepath}/common_events/cache/state"]
-
-  cron { 'collect_common_events':
-    ensure   => $cron_ensure,
-    command  => "${confdir}/collect_api_events.rb ${confdir} ${logfile_basepath}/common_events/common_events.log ${lockdir_basepath}/common_events/cache/state",
-    user     => 'root',
-    minute   => $cron_minute,
-    hour     => $cron_hour,
-    weekday  => $cron_weekday,
-    month    => $cron_month,
-    monthday => $cron_monthday,
-    require  => [
-      File["${confdir}/events_collection.yaml"],
-      File[$conf_dirs]
-    ],
-  }
 
   file { $conf_dirs:
     ensure => directory,
@@ -109,5 +83,33 @@ class common_events (
     mode    => '0755',
     require => File[$confdir],
     source  => 'puppet:///modules/common_events/collect_api_events.rb',
+  }
+
+  file {'/etc/systemd/system/common_events.service':
+    ensure  => present,
+    content => epp('common_events/service.epp'),
+  }
+
+  file {'/etc/systemd/system/common_events.timer':
+    ensure  => present,
+    content => epp('common_events/timer.epp',
+      { 'timer' => $timer }),
+    require => [
+      File["${confdir}/events_collection.yaml"],
+      File[$conf_dirs]
+    ],
+  }
+
+  service { 'common_events.timer':
+    ensure  => running,
+    enable  => true,
+    require => File['/etc/systemd/system/common_events.timer'],
+    notify  => Exec['common_events_daemon_reload'], ## Seems to work without this right now
+  }
+
+  exec { 'common_events_daemon_reload':
+    command     => 'systemctl daemon-reload',
+    path        => ['/bin', '/usr/bin'],
+    refreshonly => true,
   }
 }

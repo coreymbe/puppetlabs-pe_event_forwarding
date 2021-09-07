@@ -1,0 +1,11 @@
+<%- | String $timer | -%>
+[Unit]
+Description=Timer to collect event data
+Requires=common_events.service
+
+[Timer]
+OnCalendar=<%= $timer %>
+Persistent=true
+
+[Install]
+WantedBy=timers.target
