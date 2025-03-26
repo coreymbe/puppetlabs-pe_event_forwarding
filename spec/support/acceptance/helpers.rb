@@ -33,9 +33,9 @@ class Target
   # most recently set the TARGET_HOST variable.
   PuppetLitmus.instance_methods.each do |name|
     m = PuppetLitmus.instance_method(name)
-    define_method(name) do |*args, &block|
+    define_method(name) do |*args, **kwargs, &block|
       ENV['TARGET_HOST'] = uri
-      m.bind(self).call(*args, &block)
+      m.bind(self).call(*args, **kwargs, &block)
     end
   end
 

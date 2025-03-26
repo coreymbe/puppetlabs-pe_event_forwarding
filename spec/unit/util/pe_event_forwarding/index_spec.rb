@@ -26,7 +26,7 @@ describe PeEventForwarding::Index do
     end
 
     context 'file does exist' do
-      it 'creates a new file with correct content' do
+      it 'does not create a new file' do
         expect(File).not_to receive(:write)
         index
       end
@@ -49,7 +49,7 @@ describe PeEventForwarding::Index do
       expect(index.counts).to eq(index_data)
     end
 
-    it 'sets first_run to false' do
+    it 'sets first_run to true' do
       index.new_index_file
       expect(index.first_run?).to be true
     end
@@ -85,7 +85,7 @@ describe PeEventForwarding::Index do
 
     it 'updates @counts' do
       expect(File).to receive(:write).with(filepath, index_yaml(foo: 10))
-      expect(File).to receive(:read).once
+      expect(File).to receive(:read).twice
       index.save(foo: 10)
       expect(index.count(:foo)).to eq(10)
     end

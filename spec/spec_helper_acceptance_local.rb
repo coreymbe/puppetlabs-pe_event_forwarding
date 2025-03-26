@@ -21,7 +21,7 @@ RSpec.configure do |config|
 end
 
 def acceptance_setup
-  set_sitepp_content(declare('class', 'pe_event_forwarding', { 'pe_token' => auth_token, 'disabled' => true }))
+  set_sitepp_content(declare('class', 'pe_event_forwarding', { 'pe_token' => auth_token, 'disabled' => true, 'log_level' => 'DEBUG' }))
   trigger_puppet_run(puppetserver)
 end
 
@@ -77,6 +77,7 @@ def setup_manifest(pe_token, cron_disabled: true)
   class { 'pe_event_forwarding':
     pe_token => '#{pe_token}',
     disabled => '#{cron_disabled}',
+    log_level => 'DEBUG',
   }
   MANIFEST
 end
@@ -99,7 +100,7 @@ end
 
 def get_service_index(service_symbol)
   index_contents = puppetserver.run_shell("#{CONFDIR}/pe_event_forwarding/collect_api_events.rb ; cat #{CONFDIR}/pe_event_forwarding/pe_event_forwarding_indexes.yaml").stdout
-  index = YAML.safe_load(index_contents, [Symbol])
+  index = YAML.safe_load(index_contents, permitted_classes: [Symbol])
   index[service_symbol]
 end
 
@@ -111,4 +112,13 @@ end
 def enable_rbac_events
   set_sitepp_content(declare('class', 'pe_event_forwarding', { 'pe_token' => auth_token, 'disabled' => true, }))
   trigger_puppet_run(puppetserver)
+end
+
+def index_fail_reset
+  puppetserver.run_shell('systemctl stop pe-orchestration-services')
+  puppetserver.run_shell("rm #{CONFDIR}/pe_event_forwarding/pe_event_forwarding_indexes.yaml")
+  puppetserver.run_shell("cat /dev/null > #{LOGDIR}/pe_event_forwarding.log")
+  puppetserver.run_shell("#{CONFDIR}/pe_event_forwarding/collect_api_events.rb")
+  puppetserver.run_shell('systemctl start pe-orchestration-services')
+  puppetserver.run_shell("#{CONFDIR}/pe_event_forwarding/collect_api_events.rb")
 end

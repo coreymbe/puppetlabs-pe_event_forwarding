@@ -8,7 +8,7 @@ describe 'Verify the minimum install' do
   end
 
   after(:all) do
-    set_sitepp_content(declare('class', 'pe_event_forwarding', { 'pe_token' => auth_token, 'disabled' => true }))
+    set_sitepp_content(declare('class', 'pe_event_forwarding', { 'pe_token' => auth_token, 'disabled' => true, 'log_level' => 'DEBUG' }))
     trigger_puppet_run(puppetserver)
   end
 

@@ -60,6 +60,7 @@ def main(confdir, logpath, lockdir)
 
   if index.first_run?
     if settings['skip_jobs'].nil?
+      log.debug("Starting orchestrator for first run with #{index.count(:orchestrator)} event(s)")
       data[:orchestrator] = orchestrator.current_job_count(timeout)
     end
     service_names.each do |service|
