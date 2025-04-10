@@ -5,7 +5,7 @@ on: [pull_request]
 jobs:
   setup_matrix:
     name: "Setup Test Matrix"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.build-matrix.outputs.matrix }}
 
@@ -47,7 +47,7 @@ jobs:
     needs:
       - setup_matrix
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup_matrix.outputs.matrix) }}

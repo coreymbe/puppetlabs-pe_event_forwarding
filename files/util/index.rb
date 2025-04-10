@@ -5,9 +5,14 @@ module PeEventForwarding
     def initialize(statedir)
       require 'yaml'
       @filepath = "#{statedir}/pe_event_forwarding_indexes.yaml"
-      @first_run = false
 
-      new_index_file unless File.exist? @filepath
+      # In the event that the first run failed, the index file will exist with all values set to 0.
+      # When this occurs we treat subsequent runs as the first, until the current count is logged.
+      if File.exist? @filepath
+        @first_run = YAML.safe_load(File.read(@filepath), permitted_classes: [Symbol]).values.all? { |value| value == 0 }
+      else
+        new_index_file
+      end
     end
 
     def new_index_file
