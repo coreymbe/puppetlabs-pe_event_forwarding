@@ -4,11 +4,19 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding)
 
-[Current Diff](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/compare/v2.1.0..main)
+[Current Diff](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/compare/v2.2.0..main)
+
+## [v2.2.0](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/tree/v2.1.0) (2024-11-26)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/compare/v2.1.0..v2.2.0)
+
+### Fixed
+
+-  In the event the first collection run fails, subsequent runs are treated as the first until event counts are successfully saved to the index. [#132](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/pull/132)
 
 ## [v2.1.0](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/tree/v2.1.0) (2024-11-26)
 
-[Full Changelog](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/compare/v2.0.0..v2.0.1)
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/compare/v2.0.0..v2.1.0)
 
 ### Fixed
 
