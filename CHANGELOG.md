@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file. The format 
 
 [Current Diff](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/compare/v2.2.0..main)
 
-## [v2.2.0](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/tree/v2.1.0) (2024-11-26)
+## [v2.2.0](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/tree/v2.1.0) (2025-07-15)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/compare/v2.1.0..v2.2.0)
 

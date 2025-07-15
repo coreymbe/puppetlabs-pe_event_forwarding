@@ -31,8 +31,9 @@ describe PeEventForwarding::Index do
         index
       end
 
-      it 'returns false on first_run? call' do
-        expect(index.first_run?).to be false
+      # This one returns true when the file already exists but all values are zero
+      it 'returns true on first_run? call' do
+        expect(index.first_run?).to be true
       end
     end
   end

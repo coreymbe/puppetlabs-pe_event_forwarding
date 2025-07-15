@@ -21,7 +21,7 @@ describe 'index file' do
   it 'treats run as the first when first_run failed' do
     index_fail_reset
     first_run_count = puppetserver.run_shell("grep 'first run' #{LOGDIR}/pe_event_forwarding.log -c", expect_failures: true).stdout.to_i
-    expect(first_run_count).to eql(6)
+    expect(first_run_count).to be(6)
   end
 
   it 'updates orchestrator index value' do
