@@ -14,6 +14,6 @@ class pe_event_forwarding::v2_cleanup {
   }
 
   file { "${full_confdir}/events_collection.yaml":
-    ensure  => absent,
+    ensure => absent,
   }
 }
