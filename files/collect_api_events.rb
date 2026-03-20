@@ -175,8 +175,8 @@ def main(confdir, logpath, lockdir)
       log.warn(processor.stderr, source: processor.name, exit_code: processor.exitcode) unless processor.stderr.empty? && processor.exitcode == 0
       log.info("#{processor.name} finished: #{duration} second(s) to complete.")
     end
-    index.save(**data.reject { |k, _| k == :orchestrator_plan })
   end
+  index.save(**data.reject { |k, _| k == :orchestrator_plan }) if data.any? { |_k, v| !v.nil? }
   log.info("Event Forwarding total execution time: #{Time.now - common_event_start_time} second(s)")
 rescue => exception
   puts exception

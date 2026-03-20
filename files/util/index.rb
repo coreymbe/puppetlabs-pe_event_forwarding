@@ -50,7 +50,11 @@ module PeEventForwarding
       data = counts(refresh: true)
       service.each do |key, value|
         next if value.nil?
-        data[key] = value.is_a?(Integer) ? value : value['api_total_count']
+        data[key] = if value.is_a?(Hash)
+                      value['api_total_count']
+                    else
+                      value
+                    end
       end
       File.write(filepath, data.to_yaml)
       @counts = data
