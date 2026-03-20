@@ -50,6 +50,8 @@
 #   When set to `undef` the default of 60 seconds will be used
 # @param [Optional[Boolean]] skip_jobs
 #   When true, event collection from the Orchestrator API is disabled.
+# @param [Optional[Boolean]] skip_plans
+#   When true, event collection from the Orchestrator plan_jobs API is disabled.
 # @param [Optional[Array]] skip_events
 #   Array of event types that should be skipped during event collection from the Activity API.
 #   Acceptable values are: ['classifier','code-manager','pe-console','rbac']
@@ -72,6 +74,7 @@ class pe_event_forwarding (
   Optional[Integer]                               $api_page_size = undef,
   Optional[Integer]                               $timeout       = undef,
   Optional[Boolean]                               $skip_jobs     = undef,
+  Optional[Boolean]                               $skip_plans    = undef,
   Optional[Array[Enum[
         'classifier',
         'code-manager',

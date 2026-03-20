@@ -18,6 +18,9 @@
 <% if $pe_event_forwarding::skip_jobs{ -%>
 "skip_jobs" : <%= $pe_event_forwarding::skip_jobs %>
 <% } -%>
+<% if $pe_event_forwarding::skip_plans{ -%>
+"skip_plans" : <%= $pe_event_forwarding::skip_plans %>
+<% } -%>
 <% if $pe_event_forwarding::timeout{ -%>
 "timeout" : "<%= $pe_event_forwarding::timeout %>"
 <% } -%>

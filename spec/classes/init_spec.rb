@@ -77,6 +77,16 @@ describe 'pe_event_forwarding' do
           is_expected.to contain_cron('collect_pe_events')
             .with_command(%r{collect_api_events.rb*.*pe_event_forwarding.log*.*\/state\/pe_event_forwarding\/cache\/state})
         }
+
+        it {
+          is_expected.to contain_file("#{confdir_expectation}/pe_event_forwarding/collection_settings.yaml")
+            .with(mode: '0640')
+        }
+
+        it {
+          is_expected.to contain_file("#{confdir_expectation}/pe_event_forwarding/collection_secrets.yaml")
+            .with(mode: '0600')
+        }
       end
 
       context 'with cron disabled' do
@@ -93,6 +103,33 @@ describe 'pe_event_forwarding' do
             ensure: 'absent',
           )
         }
+      end
+
+      context 'with skip_plans => true' do
+        let(:params) do
+          {
+            pe_token: 'blah',
+            skip_plans: true,
+          }
+        end
+
+        it 'renders skip_plans: true in collection_settings.yaml' do
+          is_expected.to contain_file("#{confdir_expectation}/pe_event_forwarding/collection_settings.yaml")
+            .with_content(%r{"skip_plans"\s*:\s*true})
+        end
+      end
+
+      context 'with skip_plans not set (default)' do
+        let(:params) do
+          {
+            pe_token: 'blah',
+          }
+        end
+
+        it 'does not render skip_plans in collection_settings.yaml' do
+          is_expected.to contain_file("#{confdir_expectation}/pe_event_forwarding/collection_settings.yaml")
+            .without_content(%r{"skip_plans"})
+        end
       end
     end
   end

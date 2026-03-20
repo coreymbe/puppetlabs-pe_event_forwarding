@@ -122,3 +122,18 @@ def index_fail_reset
   puppetserver.run_shell('systemctl start pe-orchestration-services')
   puppetserver.run_shell("#{CONFDIR}/pe_event_forwarding/collect_api_events.rb")
 end
+
+def get_plan_index
+  contents = puppetserver.run_shell("cat #{CONFDIR}/pe_event_forwarding/pe_event_forwarding_plan_index.yaml").stdout
+  YAML.safe_load(contents)
+end
+
+def disable_plan_collection
+  set_sitepp_content(declare('class', 'pe_event_forwarding', { 'pe_token' => auth_token, 'disabled' => true, 'skip_plans' => true }))
+  trigger_puppet_run(puppetserver)
+end
+
+def enable_plan_collection
+  set_sitepp_content(declare('class', 'pe_event_forwarding', { 'pe_token' => auth_token, 'disabled' => true }))
+  trigger_puppet_run(puppetserver)
+end

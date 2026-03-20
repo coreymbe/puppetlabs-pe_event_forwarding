@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file. The format 
 
 [Current Diff](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/compare/v2.2.0..main)
 
+### Added
+
+- Plan job data collection from the `orchestrator/v1/plan_jobs` API. Progress is tracked independently via a dedicated state file `pe_event_forwarding_plan_index.yaml`.
+
+- Added parameter `pe_event_forwarding::skip_plans` to disable plan job collection from the `orchestrator/v1/plan_jobs` API.
+
+### Fixed
+
+- Issue with `get_jobs` where the first page request could return more job records than the number of new jobs available, causing duplicate data to be forwarded.
+
 ## [v2.2.0](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/tree/v2.1.0) (2025-07-15)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/compare/v2.1.0..v2.2.0)
