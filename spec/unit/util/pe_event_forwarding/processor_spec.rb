@@ -27,7 +27,9 @@ describe PeEventForwarding::Processor do
         end
 
         it 'returns correct number of processors' do
-          expect(described_class.find_each(procs_dir).count).to eq(2)
+          processors = []
+          described_class.find_each(procs_dir) { |p| processors << p }
+          expect(processors.count).to eq(2)
         end
 
         it 'returns correct object types' do
@@ -39,11 +41,13 @@ describe PeEventForwarding::Processor do
 
       context 'no processors present' do
         before(:each) do
-          allow(Find).to receive(:find).with(procs_dir).and_return([])
+          allow(described_class).to receive(:dir_listing).with(procs_dir).and_return([])
         end
 
         it 'returns no processors' do
-          expect(described_class.find_each(procs_dir).count).to eq(0)
+          processors = []
+          described_class.find_each(procs_dir) { |p| processors << p }
+          expect(processors).to be_empty
         end
       end
     end

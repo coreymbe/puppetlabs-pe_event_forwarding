@@ -29,9 +29,10 @@ module PeEventForwarding
         response       = pe_client.pe_get_request(API_END_POINT, params, timeout)
         response_body  = JSON.parse(response.body)
         total_count    = response_body['pagination']['total']
-        response_body['commits']&.map { |commit| response_items << commit }
+        commits        = response_body['commits']
+        commits&.each { |commit| response_items << commit }
 
-        break if response_body['commits'].nil? || response_body['commits'].count != api_page_size
+        break if commits.nil? || commits.count != api_page_size
         params[:offset] += api_page_size
       end
       log.debug("PE Get Events Items Found: #{service}: #{response_items.count}")

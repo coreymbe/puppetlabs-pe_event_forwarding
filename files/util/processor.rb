@@ -22,12 +22,10 @@ module PeEventForwarding
     end
 
     def self.find_each(dir)
-      return [] unless File.exist? dir
-      dir_listing(dir).select do |path|
-        unless FileTest.directory?(path)
-          processor = PeEventForwarding::Processor.new(path)
-          block_given? ? yield(processor) : processor
-        end
+      return unless File.exist? dir
+      dir_listing(dir).each do |path|
+        next if FileTest.directory?(path)
+        yield PeEventForwarding::Processor.new(path)
       end
     end
 

@@ -43,7 +43,7 @@ module PeEventForwarding
       http.request(request)
     end
 
-    # post_request takes a uri(string), headers(optional(hash)), and a timeout(optional(int)).
+    # get_request takes a uri(string), headers(optional(hash)), and a timeout(optional(int)).
     # Basic auth will be used if provided.
     def get_request(uri, timeout, headers = {})
       headers['Content-Type'] = 'application/json' unless headers.key? 'Content-Type'
@@ -54,7 +54,7 @@ module PeEventForwarding
         url.port,
         use_ssl: url.scheme == 'https',
         verify_mode: verify_mode,
-        ca_cert: ca_cert_path,
+        ca_file: ca_cert_path,
         read_timeout:    timeout.to_i,
         connect_timeout: timeout.to_i,
         ssl_timeout:     timeout.to_i,
