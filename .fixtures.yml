@@ -18,4 +18,3 @@ fixtures:
     translate: 'https://github.com/puppetlabs/puppetlabs-translate'
     provision: 'https://github.com/puppetlabs/provision'
     litmus: 'https://github.com/puppetlabs/litmus'
-    deploy_pe: 'https://github.com/jarretlavallee/puppet-deploy_pe'

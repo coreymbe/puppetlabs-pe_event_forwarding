@@ -58,34 +58,25 @@ class TargetNotFoundError < StandardError; end
 
 module TargetHelpers
   def puppetserver
-    target('puppetserver', 'acceptance:provision_vms', 'server')
+    targets('puppetserver', 'acceptance:provision_vms', 'server')
   end
   module_function :puppetserver
 
-  def localhost
-    target('localhost', 'acceptance:provision_vms', 'localhost')
-  end
-
-  def target(name, setup_task, role)
+  def targets(name, setup_task, role)
     @targets ||= {}
 
     unless @targets[name]
-      # Find the target
       inventory_hash = LitmusHelpers.inventory_hash_from_inventory_file
-      targets = LitmusHelpers.find_targets(inventory_hash, nil)
-      target_uri = targets.find do |target|
-        vars = LitmusHelpers.vars_from_node(inventory_hash, target) || {}
-        (vars['role'] || []) == role
-      end
-      unless target_uri
+      uris = LitmusHelpers.nodes_with_role(role, inventory_hash)
+      unless uris
         raise TargetNotFoundError, "none of the targets in 'inventory.yaml' have the '#{role}' role set. Did you forget to run 'rake #{setup_task}'?"
       end
-      @targets[name] = Target.new(target_uri)
+      @targets[name] = uris.map { |uri| Target.new(uri) }
     end
 
     @targets[name]
   end
-  module_function :target
+  module_function :targets
 end
 
 module LitmusHelpers

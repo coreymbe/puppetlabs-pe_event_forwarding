@@ -11,7 +11,7 @@ jobs:
 
     steps:
     - name: Checkout Source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       if: ${{ github.repository_owner == 'puppetlabs' }}
 
     - name: Activate Ruby 3.1
@@ -35,8 +35,9 @@ jobs:
         --provision-exclude docker \
         --arch-exclude arm \
         --platform-exclude debian \
+        --platform-exclude redhat-8 \
         --platform-exclude sles \
-        --platform-exclude ubuntu \
+        --platform-exclude 'ubuntu-(20|24).04' \
         --puppet-exclude 7 \
         --puppet-exclude 8 \
         --pe-include
@@ -53,7 +54,7 @@ jobs:
 
     steps:
     - name: Checkout Source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Activate Ruby 3.1
       uses: ruby/setup-ruby@v1
@@ -94,15 +95,12 @@ jobs:
     - name: Install server
       run: |
         bundle exec bolt --modulepath spec/fixtures/modules plan run pe_event_forwarding::acceptance::pe_server version='${{ matrix.collection }}' -i ./$INVENTORY_PATH --stream
-    - name: Add localhost target to inventory
-      run: |
-        bundle exec rake 'acceptance:add_localhost_target'
     - name: Install module
       run: |
         bundle exec rake 'litmus:install_module'
     - name: Run acceptance tests
       run: |
-        bundle exec rake acceptance:run_tests
+        bundle exec rake acceptance:ci_run_tests
     - name: Remove test environment
       if: ${{ always() }}
       continue-on-error: true
