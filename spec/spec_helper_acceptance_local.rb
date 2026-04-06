@@ -9,28 +9,30 @@ CONFDIR = '/etc/puppetlabs'.freeze
 LOGDIR  = '/var/log/puppetlabs/pe_event_forwarding'.freeze
 LOCKFILEDIR = '/opt/puppetlabs/pe_event_forwarding/cache/state'.freeze
 
+TARGET_SERVER = Target.new(ENV['TARGET_HOST'])
+
 RSpec.configure do |config|
   include TargetHelpers
 
   config.before(:suite) do
     # Stop the puppet service on the puppetserver to avoid edge-case conflicting
     # Puppet runs (one triggered by service vs one we trigger)
-    puppetserver.run_shell('puppet resource service puppet ensure=stopped')
+    TARGET_SERVER.run_shell('puppet resource service puppet ensure=stopped')
     acceptance_setup
   end
 end
 
 def acceptance_setup
   set_sitepp_content(declare('class', 'pe_event_forwarding', { 'pe_token' => auth_token, 'disabled' => true, 'log_level' => 'DEBUG' }))
-  trigger_puppet_run(puppetserver)
+  trigger_puppet_run(TARGET_SERVER)
 end
 
 def console_host_fqdn
-  @console_host_fqdn ||= puppetserver.run_shell('hostname -A').stdout.strip
+  @console_host_fqdn ||= TARGET_SERVER.run_shell('hostname -A').stdout.strip
 end
 
 def auth_token
-  @auth_token ||= puppetserver.run_shell('puppet access show').stdout.chomp
+  @auth_token ||= TARGET_SERVER.run_shell('puppet access show').stdout.chomp
 end
 
 # TODO: This will cause some problems if we run the tests
@@ -43,8 +45,8 @@ def set_sitepp_content(manifest)
   }
   HERE
 
-  puppetserver.write_file(content, '/etc/puppetlabs/code/environments/production/manifests/site.pp')
-  puppetserver.run_shell('chown pe-puppet:pe-puppet /etc/puppetlabs/code/environments/production/manifests/site.pp')
+  TARGET_SERVER.write_file(content, '/etc/puppetlabs/code/environments/production/manifests/site.pp')
+  TARGET_SERVER.run_shell('chown pe-puppet:pe-puppet /etc/puppetlabs/code/environments/production/manifests/site.pp')
 end
 
 def trigger_puppet_run(target, acceptable_exit_codes: [0, 2])
@@ -94,12 +96,12 @@ end
 
 def upload_rbac_script
   file_path = 'spec/support/acceptance/generate_rbac_event.rb'
-  puppetserver.bolt_upload_file(file_path, "#{CONFDIR}/pe_event_forwarding/")
-  puppetserver.run_shell("chmod +x #{CONFDIR}/pe_event_forwarding/generate_rbac_event.rb")
+  TARGET_SERVER.bolt_upload_file(file_path, "#{CONFDIR}/pe_event_forwarding/")
+  TARGET_SERVER.run_shell("chmod +x #{CONFDIR}/pe_event_forwarding/generate_rbac_event.rb")
 end
 
 def get_service_index(service_symbol)
-  index_contents = puppetserver.run_shell("#{CONFDIR}/pe_event_forwarding/collect_api_events.rb ; cat #{CONFDIR}/pe_event_forwarding/pe_event_forwarding_indexes.yaml").stdout
+  index_contents = TARGET_SERVER.run_shell("#{CONFDIR}/pe_event_forwarding/collect_api_events.rb ; cat #{CONFDIR}/pe_event_forwarding/pe_event_forwarding_indexes.yaml").stdout
   index = YAML.safe_load(index_contents, permitted_classes: [Symbol])
   index[service_symbol]
 end
@@ -115,10 +117,25 @@ def enable_rbac_events
 end
 
 def index_fail_reset
-  puppetserver.run_shell('systemctl stop pe-orchestration-services')
-  puppetserver.run_shell("rm #{CONFDIR}/pe_event_forwarding/pe_event_forwarding_indexes.yaml")
-  puppetserver.run_shell("cat /dev/null > #{LOGDIR}/pe_event_forwarding.log")
-  puppetserver.run_shell("#{CONFDIR}/pe_event_forwarding/collect_api_events.rb")
-  puppetserver.run_shell('systemctl start pe-orchestration-services')
-  puppetserver.run_shell("#{CONFDIR}/pe_event_forwarding/collect_api_events.rb")
+  TARGET_SERVER.run_shell('systemctl stop pe-orchestration-services')
+  TARGET_SERVER.run_shell("rm #{CONFDIR}/pe_event_forwarding/pe_event_forwarding_indexes.yaml")
+  TARGET_SERVER.run_shell("cat /dev/null > #{LOGDIR}/pe_event_forwarding.log")
+  TARGET_SERVER.run_shell("#{CONFDIR}/pe_event_forwarding/collect_api_events.rb")
+  TARGET_SERVER.run_shell('systemctl start pe-orchestration-services')
+  TARGET_SERVER.run_shell("#{CONFDIR}/pe_event_forwarding/collect_api_events.rb")
+end
+
+def get_plan_index
+  contents = TARGET_SERVER.run_shell("cat #{CONFDIR}/pe_event_forwarding/pe_event_forwarding_plan_index.yaml").stdout
+  YAML.safe_load(contents)
+end
+
+def disable_plan_collection
+  set_sitepp_content(declare('class', 'pe_event_forwarding', { 'pe_token' => auth_token, 'disabled' => true, 'skip_plans' => true }))
+  trigger_puppet_run(puppetserver)
+end
+
+def enable_plan_collection
+  set_sitepp_content(declare('class', 'pe_event_forwarding', { 'pe_token' => auth_token, 'disabled' => true }))
+  trigger_puppet_run(puppetserver)
 end

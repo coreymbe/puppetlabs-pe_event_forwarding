@@ -1,15 +1,5 @@
 acceptance:
   provisioner: abs
-  images: ['centos-7-x86_64']
+  images: ['redhat-8-x86_64', 'ubuntu-2404-x86_64']
   vars: |
     role: server
-master:
-  provisioner: abs
-  images: ['centos-7-x86_64']
-  vars: |
-    role: server
-agent:
-  provisioner: abs
-  images: ['centos-7-x86_64']
-  vars: |
-    role: agent

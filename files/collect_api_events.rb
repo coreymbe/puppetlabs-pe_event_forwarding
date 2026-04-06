@@ -8,6 +8,7 @@ require_relative 'util/lockfile'
 require_relative 'util/http'
 require_relative 'util/pe_http'
 require_relative 'util/index'
+require_relative 'util/plan_index'
 require_relative 'util/processor'
 require_relative 'util/logger'
 
@@ -35,6 +36,7 @@ def main(confdir, logpath, lockdir)
     log.error('Lockfile creation failed.')
   end
   index = PeEventForwarding::Index.new(confdir)
+  plan_index = PeEventForwarding::PlanIndex.new(confdir)
   data = {}
 
   client_options = {
@@ -50,7 +52,7 @@ def main(confdir, logpath, lockdir)
   orchestrator = PeEventForwarding::Orchestrator.new(settings['pe_console'], **client_options)
   activities = PeEventForwarding::Activity.new(settings['pe_console'], **client_options)
 
-  service_names = if !settings['skip_events'].nil?
+  service_names = if settings['skip_events']
                     PeEventForwarding::Activity::SERVICE_NAMES.reject do |service|
                       settings['skip_events'].include?(service.to_s)
                     end
@@ -59,13 +61,24 @@ def main(confdir, logpath, lockdir)
                   end
 
   if index.first_run?
-    if settings['skip_jobs'].nil?
+    if settings['skip_jobs']
+      data[:orchestrator] = -1
+    else
       log.debug("Starting orchestrator for first run with #{index.count(:orchestrator)} event(s)")
       data[:orchestrator] = orchestrator.current_job_count(timeout)
+    end
+    unless settings['skip_plans']
+      log.debug('Starting orchestrator plan_jobs for first run')
+      # Index the checkpoint as Time.now with no processed IDs. Any plan finishing
+      # strictly after this point will be collected on the next run.
+      plan_index.save(last_finished: Time.now.utc.iso8601, ids: [])
     end
     service_names.each do |service|
       log.debug("Starting #{service} for first run with #{index.count(service)} event(s)")
       data[service] = activities.current_event_count(service, timeout)
+    end
+    settings['skip_events']&.each do |service|
+      data[service.to_sym] = -1
     end
     index.save(**data)
     log.debug("First run. Recorded event count in #{index.filepath} and now exiting.")
@@ -79,23 +92,6 @@ def main(confdir, logpath, lockdir)
   # that have accumulated in the interim.
   settings['skip_events']&.each do |service|
     data[service.to_sym] = -1
-  end
-
-  if settings['skip_jobs']
-    data[:orchestrator] = -1
-  elsif settings['skip_jobs'].nil? && index.count(:orchestrator) == -1
-    # At this point we know orchestrator is newly re-enabled.
-    # Reinitialize the orchestrator event count and exit.
-    # Next run will continue as usual.
-    data[:orchestrator] = orchestrator.current_job_count(timeout)
-    index.save(**data)
-    log.debug("Orchestration jobs collection reenabled. First run. Recorded event count in #{index.filepath}.")
-    # The index is now saved, so to ensure that the count does not get passed to any
-    # processors (which should be written to check for `nil` or `-1`) we set it to nil.
-    data[:orchestrator] = nil
-  else
-    log.debug("Orchestrator: Starting count: #{index.count(:orchestrator)}")
-    data[:orchestrator] = orchestrator.new_data(index.count(:orchestrator), timeout)
   end
 
   service_names.each do |service|
@@ -115,17 +111,61 @@ def main(confdir, logpath, lockdir)
     end
   end
 
-  combined_keys = if settings['skip_jobs'].nil?
-                    service_names.dup << :orchestrator
-                  else
-                    service_names.dup
-                  end
-  events_counts = {}
-  combined_keys.map do |key|
-    events_counts[key] = data[key].count unless data[key].nil? || data[key].is_a?(Integer)
+  if settings['skip_jobs']
+    data[:orchestrator] = -1
+  elsif index.count(:orchestrator) == -1
+    # At this point we know orchestrator is newly re-enabled.
+    # Reinitialize the orchestrator event count and exit.
+    # Next run will continue as usual.
+    data[:orchestrator] = orchestrator.current_job_count(timeout)
+    index.save(**data)
+    log.debug("Orchestration jobs collection reenabled. First run. Recorded event count in #{index.filepath}.")
+    # The index is now saved, so to ensure that the count does not get passed to any
+    # processors (which should be written to check for `nil` or `-1`) we set it to nil.
+    data[:orchestrator] = nil
+  else
+    log.debug("Orchestrator: Starting count: #{index.count(:orchestrator)}")
+    data[:orchestrator] = orchestrator.new_data(index.count(:orchestrator), timeout)
   end
 
-  if data.any? { |_k, v| !v.nil? || (v != -1) }
+  if settings['skip_plans']
+    # plans are explicitly disabled via settings; mark plan index accordingly
+    plan_index.save(last_finished: nil, ids: [])
+  elsif plan_index.last_finished.nil?
+    # Re-enable plan collection. Index the checkpoint as Time.now with no processed IDs.
+    # Only plans finishing after this moment will be collected — mirrors the task
+    # re-enable pattern which snapshots the current count and moves on.
+    plan_index.save(last_finished: Time.now.utc.iso8601, ids: [])
+    log.debug("Orchestration plan_jobs collection reenabled. Recorded plan checkpoint in #{plan_index.filepath}.")
+  else
+    log.debug("Orchestrator plan_jobs: Indexing last finished timestamp: #{plan_index.last_finished}")
+    processed_ids = plan_index.ids
+    processed_ids = [] unless processed_ids.is_a?(Array)
+    res = orchestrator.new_plan_data_by_finish(plan_index.last_finished, timeout, processed_ids: processed_ids)
+    unless res.nil?
+      # res contains 'last_finished' => max finished timestamp, and 'events' => [jobs]
+      data[:orchestrator_plan] = res
+      # compute ids of jobs that have the max finished timestamp so we can dedupe inclusive queries
+      max_ts = res['last_finished']
+      finished_jobs = (res['events'] || []).select do |j|
+        orchestrator.plan_job_finished_timestamp(j).to_s == max_ts.to_s
+      end
+      processed_ids = finished_jobs.map { |j| j['name'].to_s }
+      # persist plan index (advance last_finished and ids)
+      plan_index.save(last_finished: max_ts, ids: processed_ids)
+    end
+  end
+
+  combined_keys = service_names.dup
+  combined_keys << :orchestrator unless settings['skip_jobs']
+  combined_keys << :orchestrator_plan if data.key?(:orchestrator_plan)
+  events_counts = {}
+  combined_keys.each do |key|
+    events_counts[key] = data[key]['events'].count if data[key].is_a?(Hash) && data[key]['events'].is_a?(Array)
+    events_counts[key] = data[key].count if data[key].is_a?(Array)
+  end
+
+  if data.any? { |_k, v| !v.nil? && v != -1 }
     PeEventForwarding::Processor.find_each("#{confdir}/processors.d") do |processor|
       log.info("#{processor.name} starting with events: #{events_counts}")
       start_time = Time.now
@@ -135,8 +175,8 @@ def main(confdir, logpath, lockdir)
       log.warn(processor.stderr, source: processor.name, exit_code: processor.exitcode) unless processor.stderr.empty? && processor.exitcode == 0
       log.info("#{processor.name} finished: #{duration} second(s) to complete.")
     end
-    index.save(**data)
   end
+  index.save(**data.reject { |k, _| k == :orchestrator_plan }) if data.any? { |_k, v| !v.nil? }
   log.info("Event Forwarding total execution time: #{Time.now - common_event_start_time} second(s)")
 rescue => exception
   puts exception

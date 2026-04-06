@@ -66,6 +66,7 @@ The following parameters are available in the `pe_event_forwarding` class:
 * [`api_page_size`](#-pe_event_forwarding--api_page_size)
 * [`timeout`](#-pe_event_forwarding--timeout)
 * [`skip_jobs`](#-pe_event_forwarding--skip_jobs)
+* [`skip_plans`](#-pe_event_forwarding--skip_plans)
 * [`skip_events`](#-pe_event_forwarding--skip_events)
 
 ##### <a name="-pe_event_forwarding--pe_username"></a>`pe_username`
@@ -217,6 +218,14 @@ Default value: `undef`
 Data type: `Optional[Boolean]`
 
 When true, event collection from the Orchestrator API is disabled.
+
+Default value: `undef`
+
+##### <a name="-pe_event_forwarding--skip_plans"></a>`skip_plans`
+
+Data type: `Optional[Boolean]`
+
+When true, event collection from the Orchestrator plan_jobs API is disabled.
 
 Default value: `undef`
 

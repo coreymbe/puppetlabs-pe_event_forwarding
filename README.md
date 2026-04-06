@@ -14,7 +14,7 @@
 
 ## Intro
 
-This module gathers events from the [Puppet Jobs API](https://puppet.com/docs/pe/latest/orchestrator_api_jobs_endpoint.html#get_jobs) and the [Activities API]( https://puppet.com/docs/pe/latest/activity_api_events.html#activity-api-v2-get-events) using a script executed by a cron job. This data is provided to any available processor scripts during each run. The scripts are provided by any modules that want to make use of this data such as the [puppetlabs-splunk_hec](https://forge.puppet.com/modules/puppetlabs/splunk_hec) module. These processor scripts then handle the data they are given and forward it on to their respective platforms.
+This module gathers events from the [Puppet Jobs API](https://puppet.com/docs/pe/latest/orchestrator_api_jobs_endpoint.html#get_jobs), the [Plan Jobs API](https://help.puppet.com/pe/current/topics/orchestrator_api_get_plan_jobs.htm), and the [Activities API]( https://puppet.com/docs/pe/latest/activity_api_events.html#activity-api-v2-get-events) using a script executed by a cron job. This data is provided to any available processor scripts during each run. The scripts are provided by any modules that want to make use of this data such as the [puppetlabs-splunk_hec](https://forge.puppet.com/modules/puppetlabs/splunk_hec) module. These processor scripts then handle the data they are given and forward it on to their respective platforms.
 
 #### Compatible PE Versions
 
@@ -97,6 +97,12 @@ A processor should implement the following workflow when invoked:
         "events": [
             ...
         ]
+    },
+    "orchestrator_plan": {
+        "last_finished": "2025-01-01T00:00:00Z",
+        "events": [
+            ...
+        ]
     }
 }
 ```
@@ -126,10 +132,10 @@ data = JSON.parse(data_file_path)
 events = []
 
 # Iterate over event types
-['orchestrator', 'rbac', 'classifier', 'pe-console', 'code-manager'].each do |index|
+['orchestrator', 'orchestrator_plan', 'rbac', 'classifier', 'pe-console', 'code-manager'].each do |index|
     # Add each type's events to the array
-    # A nil value indicates that there were no new events.
-    # A negative value indicates that the sourcetype has been disabled from the pe_event_forwarding module.
+    # A negative value indicates that collection has been disabled. A nil value indicates that there were no new events.
+    # Note: orchestrator_plan is never set to -1; it is absent (nil) when skip_plans is true or there are no new plan job events.
     next if data[index].nil? || data[index] == -1
     events << data[index]['events']
 end
@@ -229,6 +235,8 @@ Inside that directory will be:
 
 * Index tracking file `pe_event_forwarding_indexes.yaml`.
 
+* Plan index tracking file `pe_event_forwarding_plan_index.yaml`.
+
 * Subdirectory for ruby class files `api`.
 
 * Subdirectory for utilities files consumed by the classes `util`.
@@ -263,7 +271,15 @@ During event collection, this optional array will be considered to determine if 
 
 `skip_jobs`
 
-Setting this variable to true will skip all orchestrator events. This is useful for instances where there is a large enough quantity of orchestrator data to create a performance issue. When disabled, the orchestrator index will show as `-1` in the `pe_event_forwarding_indexes.yaml` file. When re-enabling the `skip_jobs` variable, only new orchestrator events will be processed moving forward. It will take one run of the cron job (of the `collect_api_events.rb`) to resume event processing and recreate the orchestrator index. All other event types will be unaffected.
+Setting this variable to true will skip all orchestrator events. This is useful for instances where there is a large enough quantity of orchestrator data to create a performance issue. When disabled, the orchestrator index will show as `-1` in the `pe_event_forwarding_indexes.yaml` file. To re-enable collection remove the `skip_jobs` parameter or set it to **false**. Only new orchestrator events will be processed moving forward. It will take one run of the cron job (of the `collect_api_events.rb`) to resume event processing and recreate the orchestrator index. All other event types will be unaffected.
+
+---
+
+`skip_plans`
+
+Setting this variable to true will skip all orchestrator plan job events. This is useful for instances where there is a large enough quantity of plan job data to create a performance issue. When disabled, the `orchestrator_plan` key will be absent from the processor payload entirely (unlike `skip_jobs` and `skip_events` which set the value to `-1`). To re-enable collection remove the `skip_plans` parameter or set it to **false**. Only new plan job events will be processed moving forward. It will take one run of the cron job (of the `collect_api_events.rb`) to resume event processing and recreate the plan index. Plan job collection is tracked in a separate state file `pe_event_forwarding_plan_index.yaml`. All other event types will be unaffected.
+
+**Note**: With `skip_plans` set to **true**, individual task data associated with the plan is still collected under orchestrator events.
 
 ---
 

@@ -1,6 +1,6 @@
 {
   "name": "puppetlabs-pe_event_forwarding",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "author": "Puppet, Inc.",
   "summary": "A module that contains support for integration event reporting",
   "license": "Apache-2.0",
@@ -24,26 +24,26 @@
     {
       "operatingsystem": "AmazonLinux",
       "operatingsystemrelease": [
-        "2"
+        "2",
+        "2023"
       ]
     },
     {
       "operatingsystem": "OracleLinux",
       "operatingsystemrelease": [
-        "7",
         "8"
       ]
     },
     {
       "operatingsystem": "RedHat",
       "operatingsystemrelease": [
-        "7",
         "8",
-        "9"
+        "9",
+        "10"
       ]
     },
     {
-      "operatingsystem": "RockyLinux",
+      "operatingsystem": "Rocky",
       "operatingsystemrelease": [
         "8",
         "9"
@@ -59,19 +59,19 @@
     {
       "operatingsystem": "Ubuntu",
       "operatingsystemrelease": [
-        "18.04",
         "20.04",
-        "22.04"
+        "22.04",
+        "24.04"
       ]
     }
   ],
   "requirements": [
     {
       "name": "puppet",
-      "version_requirement": ">= 7.8.0 < 9.0.0"
+      "version_requirement": ">= 8.2.0 < 9.0.0"
     }
   ],
-  "pdk-version": "3.3.0",
-  "template-url": "pdk-default#3.3.0",
+  "pdk-version": "3.4.0",
+  "template-url": "https://github.com/puppetlabs/pdk-templates#3.3.0",
   "template-ref": "tags/3.3.0-0-g5d17ec1"
 }
