@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding)
 
-[Current Diff](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/compare/v2.2.0..main)
+[Current Diff](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/compare/v2.3.0..main)
+
+## [v2.3.0](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/tree/v2.3.0) (2026-04-09)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/compare/v2.2.0..v2.3.0)
 
 ### Added
 
@@ -16,7 +20,7 @@ All notable changes to this project will be documented in this file. The format 
 
 - Issue with `get_jobs` where the first page request could return more job records than the number of new jobs available, causing duplicate data to be forwarded.
 
-## [v2.2.0](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/tree/v2.1.0) (2025-07-15)
+## [v2.2.0](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/tree/v2.2.0) (2025-07-15)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-pe_event_forwarding/compare/v2.1.0..v2.2.0)
 
